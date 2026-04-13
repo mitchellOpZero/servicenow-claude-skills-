@@ -1,4 +1,4 @@
-# operatorZero ServiceNow Skills for Claude Code
+# OperatorZero ServiceNow Skills for Claude Code
 
 Free ServiceNow instance scanning tools built as [Claude Code](https://claude.ai/claude-code) skills.
 
