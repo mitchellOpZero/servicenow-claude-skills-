@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instance Orientation — dev191476</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f8f9fb; color: #424a53; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
+
+  .top-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #ffffff; border-bottom: 1px solid #d1d9e0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 12px 24px;
+    display: flex; align-items: center; gap: 24px;
+    overflow-x: auto; white-space: nowrap;
+  }
+  .top-nav a {
+    color: #656d76; text-decoration: none; font-size: 13px; font-weight: 500;
+    padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .top-nav a:hover { color: #0969da; border-bottom-color: #0969da; }
+  .nav-brand { color: #1f2328 !important; font-weight: 700; font-size: 14px !important; letter-spacing: -0.3px; }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  h1 { color: #1f2328; font-size: 28px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .subtitle { color: #656d76; font-size: 15px; margin-bottom: 40px; }
+
+  h2 { color: #1f2328; font-size: 20px; font-weight: 700; margin: 48px 0 20px; letter-spacing: -0.3px; }
+  h3 { color: #1f2328; font-size: 16px; font-weight: 600; margin: 24px 0 12px; }
+
+  p { line-height: 1.8; margin-bottom: 16px; }
+
+  .glance-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 32px;
+  }
+  .glance-card {
+    background: #ffffff; border: 1px solid #d1d9e0; border-radius: 8px;
+    padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .glance-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #656d76; font-weight: 600; margin-bottom: 6px; }
+  .glance-value { font-size: 18px; font-weight: 700; color: #1f2328; }
+  .glance-detail { font-size: 13px; color: #656d76; margin-top: 4px; }
+
+  .module-card {
+    background: #ffffff; border: 1px solid #d1d9e0; border-radius: 8px;
+    padding: 24px; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border-left: 4px solid #0969da;
+  }
+  .module-card.amber { border-left-color: #d4a72c; }
+  .module-card.green { border-left-color: #1a7f37; }
+  .module-card.purple { border-left-color: #8250df; }
+  .module-card.red { border-left-color: #cf222e; }
+  .module-card.slate { border-left-color: #656d76; }
+  .module-title { font-size: 16px; font-weight: 700; color: #1f2328; margin-bottom: 10px; }
+  .module-card p { margin-bottom: 10px; line-height: 1.7; }
+  .module-card p:last-child { margin-bottom: 0; }
+  .module-headline { font-weight: 600; color: #1f2328; }
+
+  .attention-item {
+    background: #ffffff; border: 1px solid #d1d9e0; border-radius: 8px;
+    padding: 20px; margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .attention-title { font-weight: 700; color: #1f2328; font-size: 15px; margin-bottom: 6px; }
+  .attention-where { font-size: 13px; color: #656d76; margin-bottom: 6px; }
+  .attention-why { line-height: 1.7; margin-bottom: 6px; }
+  .attention-action { font-size: 13px; color: #0969da; font-weight: 500; }
+
+  .urgency-label { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 20px; margin-top: 32px; }
+  .urgency-red { color: #cf222e; }
+  .urgency-yellow { color: #9a6700; }
+  .urgency-blue { color: #0969da; }
+
+  .cheat-sheet {
+    background: #f0f4f8; border-radius: 12px; padding: 32px; margin-top: 24px;
+  }
+  .cheat-sheet h3 { margin-top: 20px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.6px; color: #656d76; }
+  .cheat-sheet h3:first-child { margin-top: 0; }
+  .cheat-sheet ul { padding-left: 20px; margin: 8px 0 16px; }
+  .cheat-sheet li { font-size: 14px; line-height: 1.7; margin-bottom: 4px; }
+
+  .ref-table-wrapper { margin-top: 24px; overflow-x: auto; }
+  .ref-note { font-size: 12px; color: #656d76; font-style: italic; margin-bottom: 12px; }
+  table.ref-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table.ref-table th {
+    background: #f0f3f6; color: #656d76; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 10px 14px; text-align: left; border-bottom: 2px solid #d1d9e0;
+  }
+  table.ref-table td {
+    padding: 10px 14px; border-bottom: 1px solid #e8ecf0; color: #424a53;
+  }
+  table.ref-table tr:last-child td { border-bottom: none; }
+
+  .vibe-box {
+    background: #ffffff; border: 1px solid #d1d9e0; border-radius: 8px;
+    padding: 20px 24px; margin: 24px 0;
+    font-size: 15px; font-style: italic; color: #424a53; line-height: 1.7;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .footer {
+    text-align: center; margin-top: 64px; padding-top: 24px;
+    border-top: 1px solid #e8ecf0; font-size: 12px; color: #8b949e;
+  }
+
+  @media (max-width: 640px) {
+    .glance-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="#" class="nav-brand">dev191476</a>
+  <a href="#glance">At a Glance</a>
+  <a href="#running">What's Running</a>
+  <a href="#who-built">Who Built This</a>
+  <a href="#custom">What's Custom</a>
+  <a href="#attention">Needs Attention</a>
+  <a href="#data-flow">Data Flows</a>
+  <a href="#security">Security</a>
+  <a href="#cheat-sheet">Cheat Sheet</a>
+  <a href="#reference">Reference</a>
+</nav>
+
+<div class="container">
+
+<h1>Instance Orientation</h1>
+<p class="subtitle">dev191476.service-now.com &mdash; scanned April 6, 2026</p>
+
+<!-- 1. INSTANCE AT A GLANCE -->
+<h2 id="glance">Instance at a Glance</h2>
+
+<div class="glance-grid">
+  <div class="glance-card">
+    <div class="glance-label">Instance</div>
+    <div class="glance-value">dev191476</div>
+    <div class="glance-detail">Zurich (July 2025, Patch 1)</div>
+  </div>
+  <div class="glance-card">
+    <div class="glance-label">Environment</div>
+    <div class="glance-value">Developer</div>
+    <div class="glance-detail">Only 2 logins in the last 30 days</div>
+  </div>
+  <div class="glance-card">
+    <div class="glance-label">User Activity</div>
+    <div class="glance-value">641 users</div>
+    <div class="glance-detail">2 active recently &bull; 18 admin accounts</div>
+  </div>
+  <div class="glance-card">
+    <div class="glance-label">Active Modules</div>
+    <div class="glance-value">ITSM + SAM</div>
+    <div class="glance-detail">Incident, Change, Problem, Catalog, Knowledge, CMDB, Assets</div>
+  </div>
+  <div class="glance-card">
+    <div class="glance-label">Customization Level</div>
+    <div class="glance-value">Moderate</div>
+    <div class="glance-detail">Heavy on Change, standard elsewhere</div>
+  </div>
+  <div class="glance-card">
+    <div class="glance-label">Automation</div>
+    <div class="glance-value">308 Flows</div>
+    <div class="glance-detail">Modern + 29 legacy workflows</div>
+  </div>
+</div>
+
+<div class="vibe-box">
+  A moderately customized developer instance running Zurich with a full ITSM stack and software asset management. Change management has a significant approval bottleneck &mdash; most changes are stuck waiting for authorization. The instance sees very low daily use, consistent with a sandbox or development environment. There's a trail of experimentation: empty custom tables, test update sets, and a mix of modern flows and legacy workflows.
+</div>
+
+<!-- 2. WHAT'S RUNNING -->
+<h2 id="running">What's Running Here</h2>
+
+<div class="module-card red">
+  <div class="module-title">Incident Management</div>
+  <p>Handles reported issues and service disruptions. There are 76 incidents on file, and none are currently active &mdash; everything has been resolved or closed. <span class="module-headline">However, 42% of all incidents were marked Critical.</span> That's a strong signal that priority is being used inconsistently &mdash; when nearly half of everything is "critical," nothing really is. The incident process has notable custom configuration around form behavior and field rules, suggesting past investment in how incidents get triaged and routed.</p>
+</div>
+
+<div class="module-card amber">
+  <div class="module-title">Change Management</div>
+  <p>Manages planned modifications to the environment. This is the most active &mdash; and most troubled &mdash; process on the instance. There are 89 active changes, and <span class="module-headline">68% of them (61 changes) are stuck waiting for authorization.</span> Almost all active changes (83 of 89) are over 90 days old. The process supports Normal, Standard, and Emergency change types, with Normal changes making up 90% of volume. Change has the heaviest customization on the instance &mdash; extensive form behavior and field rules, suggesting a sophisticated approval workflow that may be too complex for the volume it handles. 16 changes have no one assigned to them.</p>
+</div>
+
+<div class="module-card">
+  <div class="module-title">Problem Management</div>
+  <p>Tracks root causes behind recurring incidents. There are 15 active problems spread across investigation stages &mdash; 4 new, 6 being assessed, 2 in root cause analysis, and 2 being fixed. <span class="module-headline">Every single active problem is over 90 days old.</span> This process appears to have stalled entirely. The problems are assigned (none are orphaned), but nobody is moving them forward. This likely reflects the low activity on the instance rather than a process failure, but these should either be resolved or closed out.</p>
+</div>
+
+<div class="module-card green">
+  <div class="module-title">Knowledge Management</div>
+  <p>The knowledge base is in good shape. There are 232 articles across 4 knowledge bases, with 215 published, 10 in draft, and only 7 marked outdated. <span class="module-headline">That's a 93% publication rate &mdash; someone has been actively curating content here.</span> This is one of the healthier processes on the instance.</p>
+</div>
+
+<div class="module-card purple">
+  <div class="module-title">Service Catalog</div>
+  <p>Self-service request portal for users to order services and equipment. The catalog is large &mdash; 509 items across 88 categories &mdash; which is typical for a demo/dev instance that ships with sample content. There are 12 active requests in flight (8 open, 3 being worked, 1 pending). <span class="module-headline">The catalog is well-stocked but lightly used</span>, which is expected for a dev environment.</p>
+</div>
+
+<div class="module-card slate">
+  <div class="module-title">CMDB (Configuration Database)</div>
+  <p>Tracks IT infrastructure and relationships. The CMDB holds 2,784 items, dominated by software packages (1,767) and hardware/computers (~900). There are also 462 outage records, 42 services, 40 servers, and smaller populations of databases, printers, and network gear. <span class="module-headline">This looks like demo data supplemented with some real-world modeling</span> &mdash; the mix of item types is broad but shallow, which is normal for a dev instance.</p>
+</div>
+
+<div class="module-card purple">
+  <div class="module-title">Asset &amp; License Management</div>
+  <p>Tracks hardware, software licenses, and vendor contracts. There are 5,132 total assets (930 hardware), 82 software licenses, and 124 contracts. <span class="module-headline">62% of contracts (77) are expired</span>, with only 13 currently active and 33 still in draft. Software Asset Management (SAM) plugins are active with 5 software installations tracked. This area has been set up and configured but isn't seeing ongoing operational use.</p>
+</div>
+
+<div class="module-card green">
+  <div class="module-title">Service Portals</div>
+  <p>User-facing web portals. The instance has 18 portals configured, including the standard Service Portal, Employee Center, Knowledge Portal, and an "AI Demo Portal." There are 382 widgets (10 custom-built) across 152 pages. <span class="module-headline">The portal layer is mostly out-of-box with light customization</span> &mdash; 10 custom widgets is a modest footprint, suggesting portal work has been targeted rather than extensive.</p>
+</div>
+
+<div class="module-card slate">
+  <div class="module-title">SLA Management</div>
+  <p>Tracks service level commitments. There are 23 SLA definitions monitoring 36 task-level commitments. Of those tracked, 33 have been breached at some point. <span class="module-headline">The breach rate is notably high</span>, though in a dev environment this often reflects test data and stale records rather than actual service failures.</p>
+</div>
+
+<!-- 3. WHO BUILT THIS -->
+<h2 id="who-built">Who's Been Working on This</h2>
+
+<p>The vast majority of custom configuration was done through the <strong>admin</strong> account &mdash; over 11,800 configuration items. This is typical for a dev/demo instance where a single person (or a few people sharing the admin login) does most of the work. It does mean there's no clear audit trail of who specifically made changes.</p>
+
+<p>Beyond admin, the most prolific contributors are <strong>christen.mitchell</strong> (76 items across form rules and behaviors), <strong>oz_nexus</strong> (68 items &mdash; this appears to be an integration or automation account), <strong>glide.james</strong> (57 items), and <strong>nigel.bell</strong> (43 items). A maintenance account (<strong>maint</strong>) contributed 511 items, likely from patches and upgrades.</p>
+
+<p>Activity has been <strong>very quiet recently</strong>. In the last 30 days, only 17 configuration items were touched: 7 form rules, 4 actions, 2 client-side behaviors, 2 field policies, 1 flow, and 1 portal page. This instance is essentially dormant from a development perspective.</p>
+
+<p>There are <strong>19 update sets marked as "in progress"</strong> &mdash; the packaging mechanism for moving configuration between environments. Most are auto-created "Default" sets, but a few have intentional names: "VIP Incident Management Configuration" (Nov 2025), "VPN Access Request Deployment" (Nov 2025), "High Priority Access Catalog Package" (Nov 2025), and several test sets. These represent work that was started but never formally completed or promoted.</p>
+
+<!-- 4. WHAT'S CUSTOM -->
+<h2 id="custom">What's Custom</h2>
+
+<p>This instance has <strong>moderate customization</strong>, concentrated in the ITSM processes.</p>
+
+<p><strong>Change management is the most customized area</strong>, with 128 active configurations (form rules, behaviors, field policies, and actions combined). This suggests someone invested significant effort in tailoring the change approval and lifecycle process. Incident management follows with 94 configurations, and problem management has 58.</p>
+
+<p>There are <strong>22 custom tables</strong> on the instance, but only one &mdash; "Security Token" &mdash; actually contains data (2,784 records). The other 21 are empty shells with names like "Support Request," "Nexus Test Table," "Facilities Request," and "Vendor Engagement." These are clearly experiments and prototypes that were created but never put to use.</p>
+
+<p>Interestingly, <strong>no custom fields were added to standard tables</strong>. All customization was done through form rules, behaviors, and actions rather than extending the data model. This is actually a positive sign &mdash; it means upgrades are less likely to break things.</p>
+
+<p>Several scoped applications are installed, mostly platform UI components and workspace modules. Notable ones include ITSM Workspace, ITSM Analytics, Virtual Agent, NLU Studio, and Process Automation Content. These are all ServiceNow-published apps rather than custom-built ones.</p>
+
+<p><em>Overall assessment:</em> This instance is moderately customized. Most of the custom work is in the change and incident processes, done through configuration rather than data model changes. The 21 empty custom tables are clutter but not harmful. This is a healthy customization pattern for long-term maintainability.</p>
+
+<!-- 5. WHAT NEEDS ATTENTION -->
+<h2 id="attention">What Needs Attention</h2>
+
+<div class="urgency-label urgency-red">🔴 Fix Soon</div>
+
+<div class="attention-item">
+  <div class="attention-title">Too many admin accounts, most unused</div>
+  <div class="attention-where">User administration &bull; 18 admin accounts</div>
+  <div class="attention-why">Only 1 admin account has logged in recently. 8 admins haven't logged in for over 3 years (some since 2012). Several have never logged in at all. Admin accounts are the keys to the kingdom &mdash; unused ones are a security risk.</div>
+  <div class="attention-action">Deactivate admin accounts that haven't logged in within the past year. Review whether 18 admins is appropriate for this instance.</div>
+</div>
+
+<div class="attention-item">
+  <div class="attention-title">Change management is gridlocked</div>
+  <div class="attention-where">Change process &bull; 61 of 89 active changes stuck in authorization</div>
+  <div class="attention-why">68% of active changes are waiting for someone to approve them, and 93% of all active changes are over 90 days old. Either the approval process is too complex, the approvers aren't engaged, or these are test records that should be cleaned up.</div>
+  <div class="attention-action">Determine if these are real changes or test data. If test data, close them out. If real, investigate why approvals aren't happening.</div>
+</div>
+
+<div class="urgency-label urgency-yellow">🟡 Clean Up</div>
+
+<div class="attention-item">
+  <div class="attention-title">Nearly half of all email notifications go nowhere</div>
+  <div class="attention-where">Email notifications &bull; 193 of 417 active notifications</div>
+  <div class="attention-why">46% of active email notifications have no recipients configured. They fire on events but the emails aren't reaching anyone. This creates unnecessary system load and makes it harder to understand what notifications are actually working.</div>
+  <div class="attention-action">Audit active notifications. Deactivate those with no recipients, or configure proper recipients if they're needed.</div>
+</div>
+
+<div class="attention-item">
+  <div class="attention-title">Priority calibration is off</div>
+  <div class="attention-where">Incident management &bull; 42% of incidents marked Critical</div>
+  <div class="attention-why">When nearly half of all incidents are "critical," the priority system loses its meaning. Teams can't tell what actually needs urgent attention. This may be a data quality issue from demo data, but if this instance feeds reports or dashboards, the numbers will be misleading.</div>
+  <div class="attention-action">Review how priority is set &mdash; is it manual or calculated? Consider recalibrating the priority matrix or cleaning up historical data.</div>
+</div>
+
+<div class="attention-item">
+  <div class="attention-title">21 empty custom tables</div>
+  <div class="attention-where">Platform &bull; Custom tables with no records</div>
+  <div class="attention-why">Tables like "Support Request," "Nexus Test Table," "Facilities Request," and "Vendor Engagement" were created but never populated. They add clutter to the data model and can confuse people exploring the instance.</div>
+  <div class="attention-action">Delete custom tables that have no records and no planned use. Keep "Security Token" (2,784 records).</div>
+</div>
+
+<div class="attention-item">
+  <div class="attention-title">62% of contracts are expired</div>
+  <div class="attention-where">Contract management &bull; 77 of 124 contracts</div>
+  <div class="attention-why">Most contracts on the instance have expired. 33 are still in draft and were never finalized. If this data is being used for reporting or compliance, the expired contracts should be reviewed and either renewed or archived.</div>
+  <div class="attention-action">Archive expired contracts. Review drafts &mdash; finalize or delete them.</div>
+</div>
+
+<div class="attention-item">
+  <div class="attention-title">Problem management has stalled</div>
+  <div class="attention-where">Problem process &bull; All 15 active problems are over 90 days old</div>
+  <div class="attention-why">Every open problem is stale. They're assigned but not progressing. This either means the problems are no longer relevant or nobody is actively working them.</div>
+  <div class="attention-action">Review each active problem. Close those that are no longer relevant. Re-prioritize the rest.</div>
+</div>
+
+<div class="attention-item">
+  <div class="attention-title">Abandoned update sets</div>
+  <div class="attention-where">Development &bull; 19 in-progress update sets</div>
+  <div class="attention-why">Several named update sets ("VIP Incident Management," "VPN Access Request," test sets) have been sitting in progress since late 2025. They represent unfinished work that may never be completed.</div>
+  <div class="attention-action">Close or complete update sets that are no longer being worked on. Document any that contain important partial work.</div>
+</div>
+
+<div class="urgency-label urgency-blue">🔵 Be Aware</div>
+
+<div class="attention-item">
+  <div class="attention-title">Mixed automation: modern and legacy coexist</div>
+  <div class="attention-where">Automation &bull; 308 flows + 29 legacy workflows</div>
+  <div class="attention-why">The instance uses both modern Flow Designer (308 flows) and legacy Workflow Editor (29 workflows). This is common during platform transitions but means maintenance effort is split across two systems. Legacy workflows will eventually need to be migrated.</div>
+  <div class="attention-action">No immediate action needed. When modifying automations, prefer Flow Designer. Plan to migrate legacy workflows over time.</div>
+</div>
+
+<div class="attention-item">
+  <div class="attention-title">Large catalog may have unused items</div>
+  <div class="attention-where">Service catalog &bull; 509 items, very low request volume</div>
+  <div class="attention-why">509 catalog items with only 12 active requests suggests most items are demo/sample content. A bloated catalog makes it harder for users to find what they need.</div>
+  <div class="attention-action">If this instance will serve real users, audit the catalog and deactivate items that aren't needed.</div>
+</div>
+
+<p style="margin-top: 32px; font-size: 14px; color: #656d76;">For a full technical assessment, run <span style="background: #f0f3f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: monospace;">/sn-tech-debt-scan</span>.</p>
+
+<!-- 6. DATA FLOWS -->
+<h2 id="data-flow">How Data Flows In and Out</h2>
+
+<p>This instance has a small number of integrations, consistent with a development environment.</p>
+
+<div class="module-card">
+  <div class="module-title">DoIT ServiceBridge</div>
+  <p>Two related connections &mdash; "DoIT ServiceBridge Integration" and "DoIT Ticket Sync." These appear to synchronize ticket data with an external ticketing system, likely for a managed services or outsourcing scenario.</p>
+</div>
+
+<div class="module-card green">
+  <div class="module-title">Firebase Cloud Messaging</div>
+  <p>Two connections to Google's push notification service (FCM v1 and legacy). These power mobile push notifications for the ServiceNow mobile app.</p>
+</div>
+
+<div class="module-card slate">
+  <div class="module-title">Test / Development APIs</div>
+  <p>An "o0_External_API" connection pointing to jsonplaceholder.typicode.com (a public test API) and an "External Approval API" with no endpoint configured. These are clearly development artifacts.</p>
+</div>
+
+<div class="module-card slate">
+  <div class="module-title">Yahoo Finance</div>
+  <p>A connection to Yahoo Finance's CSV endpoint. Likely a demo or experiment for pulling financial data.</p>
+</div>
+
+<p>For data imports, there are <strong>17 active data sources</strong> feeding into <strong>14 transform maps</strong>. These handle the translation of incoming data into ServiceNow records &mdash; likely used for initial data loads (users, assets, CMDB items) rather than ongoing integrations.</p>
+
+<!-- 7. SECURITY -->
+<h2 id="security">Security &amp; Access</h2>
+
+<p><strong>Admin access is over-provisioned.</strong> There are 18 accounts with full administrative privileges, but only 1 (System Administrator) has logged in recently. Eight admin accounts haven't been used in over 3 years. Several &mdash; including Fred Luddy, Carol Coughlin, and Rick Berzle &mdash; have never logged in at all. These are likely demo accounts that shipped with the instance.</p>
+
+<p><strong>User accounts are mostly dormant.</strong> Of 641 active user accounts, only 2 have logged in within the past 30 days. This is expected for a dev instance, but means there are hundreds of active accounts for people who aren't using the system.</p>
+
+<p><strong>Security settings are partially configured.</strong> CSRF protection is enabled (good). Strict updates are enforced (good). Basic authentication is not required for API access (common for dev, risky for production). Diagnostic page access and server-side script restrictions are at default settings.</p>
+
+<p><strong>Custom data security is clean.</strong> Since no custom fields were added to standard tables, there are no gaps in field-level security. The one custom table with data ("Security Token" &mdash; 2,784 records) should be checked to ensure it has appropriate access controls, given its name suggests sensitive content.</p>
+
+<p style="font-weight: 600; margin-top: 24px;">Bottom line: This instance has the security posture of a development environment. The admin sprawl and dormant accounts would be serious concerns in production, but are typical for a sandbox. If this instance is ever promoted or connected to production data, a security hardening pass is essential.</p>
+
+<!-- 8. CHEAT SHEET -->
+<h2 id="cheat-sheet">Day One Cheat Sheet</h2>
+
+<div class="cheat-sheet">
+
+<h3>The Basics</h3>
+<ul>
+  <li><strong>Zurich release</strong> (July 2025, Patch 1) &mdash; current platform version</li>
+  <li><strong>641 user accounts</strong>, but only 2 people are actually using it</li>
+  <li><strong>Full ITSM stack</strong> &mdash; Incident, Change, Problem, Catalog, Knowledge, CMDB, Assets</li>
+  <li><strong>SAM is active</strong> &mdash; Software Asset Management plugins are installed and configured</li>
+  <li><strong>18 portals</strong> including Service Portal, Employee Center, and an AI Demo Portal</li>
+  <li><strong>308 modern flows</strong> handle most automation; 29 legacy workflows still exist</li>
+</ul>
+
+<h3>Things That Will Surprise You</h3>
+<ul>
+  <li><strong>Change management is frozen</strong> &mdash; 68% of changes are stuck in approval, most for 90+ days</li>
+  <li><strong>42% of incidents are "Critical"</strong> &mdash; priority is being used more like severity</li>
+  <li><strong>Half the email notifications go nowhere</strong> &mdash; 193 of 417 have no recipients</li>
+  <li><strong>There's a "Security Token" table with 2,784 records</strong> &mdash; the only custom table with data</li>
+</ul>
+
+<h3>Don't Touch Until You Understand</h3>
+<ul>
+  <li><strong>Change management configurations</strong> &mdash; 128 active customizations, heavily tailored approval process</li>
+  <li><strong>The DoIT ServiceBridge integration</strong> &mdash; appears to sync tickets with an external system; disrupting it could affect another team</li>
+  <li><strong>The 19 in-progress update sets</strong> &mdash; some may contain partial work that someone intends to finish</li>
+</ul>
+
+<h3>Who to Ask</h3>
+<ul>
+  <li><strong>System Administrator / admin account</strong> &mdash; did the bulk of all configuration work</li>
+  <li><strong>Christen Mitchell</strong> &mdash; contributed form rules and behaviors (76 config items)</li>
+  <li><strong>oz_nexus account</strong> &mdash; integration/automation account with 68 config items; find out who owns it</li>
+</ul>
+
+</div>
+
+<!-- 9. REFERENCE -->
+<h2 id="reference">Reference</h2>
+
+<p class="ref-note">Technical reference for developers. Configuration counts include all active items (form rules, behaviors, field policies, actions).</p>
+
+<div class="ref-table-wrapper">
+<table class="ref-table">
+  <thead>
+    <tr>
+      <th>Module</th>
+      <th>Records</th>
+      <th>Customizations</th>
+      <th>Custom Fields</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Incident</td>
+      <td>76</td>
+      <td>94 (BR:54, CS:22, UI:18)</td>
+      <td>0</td>
+      <td>0 active, all resolved</td>
+    </tr>
+    <tr>
+      <td>Change Request</td>
+      <td>100</td>
+      <td>128 (BR:79, CS:41, UI:8)</td>
+      <td>0</td>
+      <td>89 active, 61 in Authorize</td>
+    </tr>
+    <tr>
+      <td>Problem</td>
+      <td>24</td>
+      <td>58 (BR:29, CS:12, UI:17)</td>
+      <td>0</td>
+      <td>15 active, all stale</td>
+    </tr>
+    <tr>
+      <td>Catalog Items</td>
+      <td>509</td>
+      <td>21 (BR:21)</td>
+      <td>0</td>
+      <td>88 categories</td>
+    </tr>
+    <tr>
+      <td>Knowledge</td>
+      <td>232</td>
+      <td>&mdash;</td>
+      <td>0</td>
+      <td>4 bases, 215 published</td>
+    </tr>
+    <tr>
+      <td>CMDB</td>
+      <td>2,784</td>
+      <td>30 (BR:26, CS:4)</td>
+      <td>0</td>
+      <td>SW pkgs: 1,767, HW: 901</td>
+    </tr>
+    <tr>
+      <td>Assets</td>
+      <td>5,132</td>
+      <td>&mdash;</td>
+      <td>0</td>
+      <td>930 HW, 82 licenses</td>
+    </tr>
+    <tr>
+      <td>Contracts</td>
+      <td>124</td>
+      <td>&mdash;</td>
+      <td>0</td>
+      <td>13 active, 77 expired</td>
+    </tr>
+    <tr>
+      <td>Task (base)</td>
+      <td>&mdash;</td>
+      <td>38 (BR:33, CS:4, UI:1)</td>
+      <td>0</td>
+      <td>Inherited by all task types</td>
+    </tr>
+    <tr>
+      <td>Users</td>
+      <td>643</td>
+      <td>&mdash;</td>
+      <td>0</td>
+      <td>81 groups, 18 admins</td>
+    </tr>
+    <tr>
+      <td>SLAs</td>
+      <td>36 tracked</td>
+      <td>23 definitions</td>
+      <td>0</td>
+      <td>33 breached</td>
+    </tr>
+    <tr>
+      <td>Portals</td>
+      <td>18 portals</td>
+      <td>10 custom widgets</td>
+      <td>&mdash;</td>
+      <td>382 widgets, 152 pages</td>
+    </tr>
+    <tr>
+      <td>Flows</td>
+      <td>308 active</td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+      <td>+ 29 legacy workflows</td>
+    </tr>
+    <tr>
+      <td>Integrations</td>
+      <td>9 REST messages</td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+      <td>17 data sources, 14 transforms</td>
+    </tr>
+    <tr>
+      <td>Notifications</td>
+      <td>417 active</td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+      <td>193 with no recipients</td>
+    </tr>
+    <tr>
+      <td>Custom Tables</td>
+      <td>22 tables</td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+      <td>Only 1 has data (u_security_token)</td>
+    </tr>
+    <tr>
+      <td>Scheduled Jobs</td>
+      <td>350 active</td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="footer">
+  Generated by opZero &bull; April 6, 2026 &bull; dev191476.service-now.com
+</div>
+
+</div>
+</body>
+</html>

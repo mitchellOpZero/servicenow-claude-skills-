@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACL Security Scanner — dev191476</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f6fa; --surface: #fff; --border: #e2e6f0;
+  --accent: #2563eb; --accent-light: #dbeafe;
+  --text: #111827; --text-muted: #6b7280; --text-secondary: #374151;
+  --red: #dc2626; --red-light: #fef2f2;
+  --orange: #ea580c; --orange-light: #fff7ed;
+  --yellow: #ca8a04; --yellow-light: #fefce8;
+  --green: #16a34a; --green-light: #f0fdf4;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08); --radius: 8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+.top-nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 0}
+.top-nav-inner{max-width:850px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+.top-nav-brand{font-weight:700;font-size:13px;color:var(--text)}
+.top-nav-brand span{color:var(--accent)}
+.top-nav-links{display:flex;gap:20px}
+.top-nav-links a{font-size:11px;font-weight:500;color:var(--text-muted);text-decoration:none;text-transform:uppercase;letter-spacing:.05em}
+.top-nav-links a:hover{color:var(--accent)}
+
+.cover{background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:56px 24px 48px;color:#fff}
+.cover-inner{max-width:850px;margin:0 auto}
+.cover-badge{display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:4px;padding:3px 10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+.cover h1{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+.cover-sub{font-size:14px;opacity:.85}
+.cover-meta{margin-top:20px;display:flex;gap:24px;font-size:11px;opacity:.7}
+
+.content{max-width:850px;margin:0 auto;padding:32px 24px 64px}
+
+.section{margin-bottom:40px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.section-num{width:28px;height:28px;background:var(--red);color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.section-title{font-size:18px;font-weight:600;color:var(--text)}
+
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:16px}
+
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.hero-stat{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;text-align:center}
+.hero-stat-value{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.hero-stat-label{font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+
+.verdict{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:24px;border-left:4px solid var(--red)}
+.narrative{color:var(--text-secondary);line-height:1.8;margin-bottom:16px}
+.narrative strong{color:var(--text)}
+
+/* Research callout */
+.research-callout{background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius);padding:16px 20px;margin:16px 0;font-size:12px;line-height:1.6}
+.research-callout strong{color:var(--red)}
+.research-callout a{color:var(--red);text-decoration:underline}
+.research-icon{font-size:14px;margin-right:6px}
+
+/* Finding cards */
+.finding-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;margin-bottom:12px;border-left:4px solid transparent}
+.finding-card.sev-critical{border-left-color:var(--red)}
+.finding-card.sev-high{border-left-color:var(--orange)}
+.finding-card.sev-medium{border-left-color:var(--yellow)}
+.finding-card.sev-low{border-left-color:var(--green)}
+.finding-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.finding-title{font-size:14px;font-weight:600;color:var(--text)}
+.sev-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em}
+.badge-critical{background:var(--red-light);color:var(--red)}
+.badge-high{background:var(--orange-light);color:var(--orange)}
+.badge-medium{background:var(--yellow-light);color:var(--yellow)}
+.badge-low{background:var(--green-light);color:var(--green)}
+.finding-count{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;margin-bottom:4px}
+.finding-desc{font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:8px}
+.finding-items{background:var(--bg);border-radius:6px;padding:12px 16px;margin-top:10px}
+.finding-items-header{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.finding-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.finding-item:last-child{border-bottom:none}
+.finding-item-name{font-weight:500;color:var(--text)}
+.finding-item-detail{color:var(--text-muted);font-size:11px}
+
+/* Props table */
+.props-table{width:100%;border-collapse:collapse;margin:16px 0}
+.props-table th{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)}
+.props-table td{padding:10px 12px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
+.prop-val{font-family:'JetBrains Mono',monospace;font-weight:600}
+.prop-good{color:var(--green)}
+.prop-bad{color:var(--red)}
+.prop-warn{color:var(--orange)}
+
+/* Scorecard */
+.scorecard{width:100%;border-collapse:collapse}
+.scorecard th{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 16px;text-align:left;border-bottom:2px solid var(--border)}
+.scorecard td{padding:14px 16px;font-size:13px;border-bottom:1px solid var(--border)}
+.scorecard tr:last-child td{border-bottom:none}
+.score-badge{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12px}
+.score-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.score-count{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px}
+.score-action{font-size:12px;color:var(--text-muted)}
+
+.ref-table{width:100%;border-collapse:collapse;font-size:11px}
+.ref-table th{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)}
+.ref-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
+
+.footer{text-align:center;padding:32px 24px;color:var(--text-muted);font-size:11px}
+.footer a{color:var(--accent);text-decoration:none}
+
+/* Prep list */
+.prep-item{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.prep-item:last-child{border-bottom:none}
+.prep-num{width:28px;height:28px;background:var(--red-light);color:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0}
+.prep-content{flex:1}
+.prep-title{font-weight:600;font-size:13px;color:var(--text);margin-bottom:2px}
+.prep-desc{font-size:12px;color:var(--text-muted);line-height:1.5}
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="top-nav-inner">
+    <div class="top-nav-brand">operator<span>zero</span>.ai</div>
+    <div class="top-nav-links">
+      <a href="#summary">Summary</a>
+      <a href="#research">Research</a>
+      <a href="#acls">ACLs</a>
+      <a href="#scripts">Scripts</a>
+      <a href="#portals">Portals</a>
+      <a href="#properties">Properties</a>
+      <a href="#remediation">Remediation</a>
+    </div>
+  </div>
+</nav>
+
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-badge">Live Instance Scan</div>
+    <h1>ACL Security Scanner</h1>
+    <div class="cover-sub">Access control misconfiguration audit — based on published vulnerability research</div>
+    <div class="cover-meta">
+      <span>Instance: dev191476</span>
+      <span>Version: Zurich Patch 1</span>
+      <span>Generated: April 9, 2026</span>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Section 1: Summary -->
+  <div class="section" id="summary">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">Security Risk Summary</div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value" style="color:var(--red)">6,920</div>
+        <div class="hero-stat-label">Empty ACLs</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value" style="color:var(--orange)">455</div>
+        <div class="hero-stat-label">Exposed Script Includes</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value" style="color:var(--yellow)">45</div>
+        <div class="hero-stat-label">Unprotected Tables</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value" style="color:var(--red)">19</div>
+        <div class="hero-stat-label">Public Pages</div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <p class="narrative" style="margin:0">This instance has <strong>6,920 access control rules with no role restriction, no condition, and no script</strong> — they default to allowing access to everyone, including unauthenticated users. <strong>455 client-callable Script Includes</strong> have no corresponding ACL, meaning any authenticated user can execute them via GlideAjax. <strong>45 custom tables</strong> have zero access controls. The <strong>guest user account is active</strong> and <strong>19 portal pages</strong> are publicly accessible. These are the same misconfiguration patterns that security researchers found leaking data on 70% of enterprise ServiceNow instances.</p>
+    </div>
+  </div>
+
+  <!-- Section 2: Research Context -->
+  <div class="section" id="research">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">Research Context — Why This Matters</div>
+    </div>
+
+    <div class="card">
+      <p class="narrative">This scan checks for the same access control misconfigurations documented by independent security research firms. These aren't theoretical risks — they've been found on thousands of production instances and have resulted in real data exposure.</p>
+
+      <div class="research-callout">
+        <strong><span class="research-icon">&#9888;</span> AppOmni (2023-2024):</strong> Aaron Costello, Chief of SaaS Security Research, found that <strong>approximately 70% of ServiceNow instances tested</strong> had ACL misconfigurations leaking data to unauthorized users. In a follow-up study, <strong>over 1,000 enterprise instances</strong> were found exposing Knowledge Base articles containing PII, credentials, and access tokens for live production systems. <strong>45% of instances</strong> were leaking KB data specifically.<br>
+        <a href="https://appomni.com/ao-labs/servicenow-knowledge-bases-data-exposures-uncovered/" target="_blank">AppOmni Research &rarr;</a> &nbsp;|&nbsp;
+        <a href="https://www.bleepingcomputer.com/news/security/over-1-000-servicenow-instances-found-leaking-corporate-kb-data/" target="_blank">BleepingComputer Coverage &rarr;</a>
+      </div>
+
+      <div class="research-callout">
+        <strong><span class="research-icon">&#9888;</span> CVE-2025-3648:</strong> ServiceNow acknowledged the vulnerability officially. Tables protected solely by data or script conditions were fully exposed. Threat actors could enumerate data through query parameters and automate record retrieval. Varonis described it as "relatively simple to exploit, requiring only minimal table access."<br>
+        <a href="https://www.cio.com/article/4019819/warning-to-servicenow-admins-fix-your-access-control-lists-now.html" target="_blank">CIO Warning &rarr;</a>
+      </div>
+
+      <div class="research-callout">
+        <strong><span class="research-icon">&#9888;</span> Threatpost / BusinessWire:</strong> ServiceNow confirmed the "major security misconfiguration impacting ServiceNow instances." The root cause: ACLs created with empty Required Role and empty Condition fields default to allowing all access — including to guest/unauthenticated users.<br>
+        <a href="https://threatpost.com/most-servicenow-instances-misconfigured-exposed/178827/" target="_blank">Threatpost &rarr;</a> &nbsp;|&nbsp;
+        <a href="https://www.businesswire.com/news/home/20220309005387/en/" target="_blank">BusinessWire &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Empty ACLs -->
+  <div class="section" id="acls">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">Empty Access Controls — The Primary Vulnerability</div>
+    </div>
+
+    <div class="finding-card sev-critical">
+      <div class="finding-header">
+        <div class="finding-title">ACLs With No Role, No Condition, No Script</div>
+        <span class="sev-badge badge-critical">Critical</span>
+      </div>
+      <div class="finding-count" style="color:var(--red)">6,920</div>
+      <div class="finding-desc"><strong>This is the exact vulnerability AppOmni documented.</strong> When an ACL has no Required Role, no Condition, and no Script, it defaults to allowing access to any user — including the guest (unauthenticated) user. On this instance, 6,920 ACLs match this pattern.</div>
+      <div class="finding-desc">Not all of these are exploitable — many protect low-sensitivity system tables, and the effective access depends on table-level vs field-level ACL inheritance. But the pattern is the same one that caused data leaks on 70% of tested instances.</div>
+      <div class="finding-items">
+        <div class="finding-items-header">Examples of empty ACLs</div>
+        <div class="finding-item">
+          <span class="finding-item-name">ecc_action</span>
+          <span class="finding-item-detail">record &middot; read — External Communication Channel queue</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">sys_db_size_stats</span>
+          <span class="finding-item-detail">record &middot; delete — Database size statistics</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">sys_logger_configuration</span>
+          <span class="finding-item-detail">record &middot; create — System logging config</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">oauth_entity_auth_scope_mapping</span>
+          <span class="finding-item-detail">record &middot; all operations — OAuth scope mappings</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">cmdb_data_management_policy</span>
+          <span class="finding-item-detail">record &middot; write — CMDB data policies</span>
+        </div>
+      </div>
+
+      <div class="research-callout" style="margin-top:16px">
+        <strong>Research reference:</strong> "An ACL with no Required Role and no Condition will default to allow any user to access the resource — including any guest users." — AppOmni, 2023. This misconfiguration was found on approximately 70% of enterprise instances tested.
+        <a href="https://appomni.com/ao-labs/servicenow-knowledge-bases-data-exposures-uncovered/" target="_blank">Source &rarr;</a>
+      </div>
+    </div>
+
+    <div class="finding-card sev-high">
+      <div class="finding-header">
+        <div class="finding-title">Custom Tables With Zero Access Controls</div>
+        <span class="sev-badge badge-high">High</span>
+      </div>
+      <div class="finding-count" style="color:var(--orange)">45</div>
+      <div class="finding-desc">45 custom tables (u_ prefix) have <strong>no ACLs whatsoever</strong> — not even empty ones. Any authenticated user with table access can read, write, and delete records. This is worse than an empty ACL — there's literally no access control defined.</div>
+      <div class="finding-items">
+        <div class="finding-items-header">Custom tables with no ACLs</div>
+        <div class="finding-item">
+          <span class="finding-item-name">u_verb_test_576385</span>
+          <span class="finding-item-detail">HAS RECORDS &middot; Verb Test Table</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">u_verb_test_236571</span>
+          <span class="finding-item-detail">HAS RECORDS &middot; Verb Test Table</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">u_high_priority_access_request</span>
+          <span class="finding-item-detail">no records &middot; High Priority Access Request</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">u_support_request</span>
+          <span class="finding-item-detail">no records &middot; Support Request</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">u_stockroom</span>
+          <span class="finding-item-detail">no records &middot; Stockroom</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">u_it_service_desk</span>
+          <span class="finding-item-detail">no records &middot; IT Service Desk</span>
+        </div>
+      </div>
+      <div class="finding-desc" style="margin-top:12px;font-style:italic">Most of these are test/dev tables without data. But 2 have records and zero protection — on a production instance this would be a direct data exposure path.</div>
+    </div>
+  </div>
+
+  <!-- Section 4: Client-Callable Script Includes -->
+  <div class="section" id="scripts">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">Exposed Client-Callable Script Includes</div>
+    </div>
+
+    <div class="finding-card sev-high">
+      <div class="finding-header">
+        <div class="finding-title">Client-Callable Script Includes Without ACLs</div>
+        <span class="sev-badge badge-high">High</span>
+      </div>
+      <div class="finding-count" style="color:var(--orange)">455 <span style="font-size:14px;color:var(--text-muted);font-weight:400">of 739 total</span></div>
+      <div class="finding-desc"><strong>61% of client-callable Script Includes have no corresponding ACL.</strong> Any authenticated user can invoke these via GlideAjax from a browser console. Some of these access sensitive data, handle authentication tokens, or perform administrative operations.</div>
+      <div class="finding-items">
+        <div class="finding-items-header">Notable exposed Script Includes</div>
+        <div class="finding-item">
+          <span class="finding-item-name">OAuthAccessToken</span>
+          <span class="finding-item-detail">public access &middot; OAuth token handling</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">ConnectionAndCredentialHelper</span>
+          <span class="finding-item-detail">public access &middot; Credential management</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">UpdateSetPreview</span>
+          <span class="finding-item-detail">package_private &middot; Update set operations</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">IndexCreator</span>
+          <span class="finding-item-detail">package_private &middot; Database index creation</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">PwdAjaxPublicEnrollEmail</span>
+          <span class="finding-item-detail">package_private &middot; Password enrollment</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">HubAjaxProcessor</span>
+          <span class="finding-item-detail">package_private &middot; Flow Designer hub</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">MobilePushNotificationHelper</span>
+          <span class="finding-item-detail">public access &middot; Push notification control</span>
+        </div>
+      </div>
+
+      <div class="research-callout" style="margin-top:16px">
+        <strong>Why this matters:</strong> Client-callable Script Includes are server-side code that any browser-based user can trigger via GlideAjax. Without an ACL, there's no role check — a basic authenticated user (even self-registered) can execute these. Script Includes like <code>OAuthAccessToken</code> and <code>ConnectionAndCredentialHelper</code> handle sensitive authentication data. This is a server-side code execution vector documented in the <a href="https://www.cio.com/article/4019819/warning-to-servicenow-admins-fix-your-access-control-lists-now.html" target="_blank">CIO security warning</a>.
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Service Portal Exposure -->
+  <div class="section" id="portals">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div class="section-title">Service Portal Attack Surface</div>
+    </div>
+
+    <div class="finding-card sev-critical">
+      <div class="finding-header">
+        <div class="finding-title">Guest User Account Is Active</div>
+        <span class="sev-badge badge-critical">Critical</span>
+      </div>
+      <div class="finding-desc">The <strong>guest user account is active</strong> on this instance. Combined with empty ACLs and public portal pages, this means unauthenticated visitors can access any resource not explicitly restricted. This is the precondition for the data exposure AppOmni documented — the guest account provides the unauthenticated access path.</div>
+    </div>
+
+    <div class="finding-card sev-high">
+      <div class="finding-header">
+        <div class="finding-title">Public Portal Pages</div>
+        <span class="sev-badge badge-high">High</span>
+      </div>
+      <div class="finding-count" style="color:var(--orange)">19</div>
+      <div class="finding-desc">19 portal pages are marked as publicly accessible — no authentication required to view them. Any widgets on these pages that query data through empty ACLs create a direct data exposure path for unauthenticated users.</div>
+      <div class="finding-items">
+        <div class="finding-items-header">Public pages</div>
+        <div class="finding-item">
+          <span class="finding-item-name">Request a Laptop</span>
+          <span class="finding-item-detail">laptop_request</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Public Assessment</span>
+          <span class="finding-item-detail">public_assessment</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">AI Demo Portal</span>
+          <span class="finding-item-detail">ai_demo_home</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Service Portal Landing</span>
+          <span class="finding-item-detail">landing</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Employee Self Service Portal</span>
+          <span class="finding-item-detail">employee_self_service</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">o0 Command Center</span>
+          <span class="finding-item-detail">o0_command_center</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">New Employee Hub</span>
+          <span class="finding-item-detail">o0_new_employee</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Clean Impressive Portal</span>
+          <span class="finding-item-detail">clean_impressive_portal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding-card sev-medium">
+      <div class="finding-header">
+        <div class="finding-title">Portals Without Login Pages</div>
+        <span class="sev-badge badge-medium">Medium</span>
+      </div>
+      <div class="finding-desc">12 of 18 portals have no login page configured. While this doesn't mean they're publicly accessible (platform-level authentication may still apply), it means there's no portal-level login redirect for unauthenticated sessions.</div>
+      <div class="finding-items">
+        <div class="finding-items-header">Portals without login pages</div>
+        <div class="finding-item"><span class="finding-item-name">Employee Onboarding Hub</span><span class="finding-item-detail">/onboard</span></div>
+        <div class="finding-item"><span class="finding-item-name">ServiceHub</span><span class="finding-item-detail">/hub</span></div>
+        <div class="finding-item"><span class="finding-item-name">Operations Center</span><span class="finding-item-detail">/ops</span></div>
+        <div class="finding-item"><span class="finding-item-name">IT Equipment Portal</span><span class="finding-item-detail">/it-equip</span></div>
+        <div class="finding-item"><span class="finding-item-name">CMDB Health</span><span class="finding-item-detail">/cmdb-health</span></div>
+        <div class="finding-item"><span class="finding-item-name">AI Demo Portal</span><span class="finding-item-detail">/ai-demo</span></div>
+        <div class="finding-item"><span class="finding-item-name">Performance Analyzer</span><span class="finding-item-detail">/perf</span></div>
+        <div class="finding-item"><span class="finding-item-name">Employee Hub</span><span class="finding-item-detail">/emp-hub</span></div>
+      </div>
+    </div>
+
+    <div class="finding-card sev-low">
+      <div class="finding-header">
+        <div class="finding-title">Knowledge Base Exposure</div>
+        <span class="sev-badge badge-low">Secure</span>
+      </div>
+      <div class="finding-desc"><strong>Good news:</strong> The critical property <code>glide.knowman.block_access_with_no_user_criteria</code> is set to <strong>true</strong>. This means Knowledge Bases without explicit User Criteria are blocked from public access. This directly mitigates the primary vulnerability AppOmni documented — where KB articles with PII and credentials were accessible to unauthenticated users on 45% of tested instances.</div>
+      <div class="finding-items">
+        <div class="finding-items-header">Knowledge Bases (4 active)</div>
+        <div class="finding-item"><span class="finding-item-name">IT</span><span class="finding-item-detail">208 published articles</span></div>
+        <div class="finding-item"><span class="finding-item-name">KCS Knowledge Base (demo data)</span><span class="finding-item-detail">4 published articles</span></div>
+        <div class="finding-item"><span class="finding-item-name">Known Error</span><span class="finding-item-detail">3 published articles</span></div>
+        <div class="finding-item"><span class="finding-item-name">Knowledge</span><span class="finding-item-detail">0 published articles</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Security Properties -->
+  <div class="section" id="properties">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div class="section-title">Security Properties Assessment</div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="props-table">
+        <thead>
+          <tr><th>Property</th><th>Current Value</th><th>Recommended</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CSRF Token Protection</td>
+            <td><span class="prop-val prop-good">true</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>XSS Prevention (escape all script)</td>
+            <td><span class="prop-val prop-good">true</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>Text Escaping</td>
+            <td><span class="prop-val prop-good">true</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>Strict Update Security</td>
+            <td><span class="prop-val prop-good">true</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>Basic Auth on Processors</td>
+            <td><span class="prop-val prop-good">true</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>File MIME Type Validation</td>
+            <td><span class="prop-val prop-good">true</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>KB Access Blocking</td>
+            <td><span class="prop-val prop-good">true</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>Session Timeout</td>
+            <td><span class="prop-val prop-good">90 min</span></td>
+            <td>&le; 120 min</td>
+            <td><span class="sev-badge badge-low">Secure</span></td>
+          </tr>
+          <tr>
+            <td>Block Client Globals</td>
+            <td><span class="prop-val prop-warn">NOT SET</span></td>
+            <td>true</td>
+            <td><span class="sev-badge badge-medium">Review</span></td>
+          </tr>
+          <tr>
+            <td>Public Catalog Access</td>
+            <td><span class="prop-val prop-warn">NOT SET</span></td>
+            <td>false</td>
+            <td><span class="sev-badge badge-medium">Review</span></td>
+          </tr>
+          <tr>
+            <td>Security Coexistence</td>
+            <td><span class="prop-val prop-warn">NOT SET</span></td>
+            <td>false</td>
+            <td><span class="sev-badge badge-medium">Review</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="narrative" style="margin-top:12px"><strong>8 of 11 security properties are correctly configured.</strong> Three are not explicitly set — they may be using platform defaults, but should be explicitly configured to ensure correct behavior across upgrades. The core protections (CSRF, XSS, strict updates, KB blocking) are all in place.</p>
+  </div>
+
+  <!-- Section 7: Instance Scan Validation -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <div class="section-title">Instance Scan Validation</div>
+    </div>
+
+    <div class="card">
+      <p class="narrative">ServiceNow's built-in Instance Scan confirms our findings. Their own security checks flagged <strong>1,978 findings</strong> on this instance:</p>
+
+      <div class="finding-items" style="background:var(--bg);border-radius:6px;padding:16px">
+        <div class="finding-item">
+          <span class="finding-item-name">Deactivated Security Controls</span>
+          <span class="finding-item-detail" style="color:var(--orange);font-weight:600">554 findings &middot; High</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Empty Access Rules</span>
+          <span class="finding-item-detail" style="color:var(--orange);font-weight:600">330 findings &middot; High</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Tables Without Access Controls</span>
+          <span class="finding-item-detail" style="color:var(--orange);font-weight:600">150 findings &middot; High</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">UI Action Visibility</span>
+          <span class="finding-item-detail" style="color:var(--orange);font-weight:600">46 findings &middot; High</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">UI Pages Without ACLs</span>
+          <span class="finding-item-detail" style="color:var(--orange);font-weight:600">34 findings &middot; High</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Public Service Portal Pages</span>
+          <span class="finding-item-detail" style="color:var(--yellow);font-weight:600">28 findings &middot; Moderate</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Users with Local Passwords</span>
+          <span class="finding-item-detail" style="color:var(--yellow);font-weight:600">23 findings &middot; Moderate</span>
+        </div>
+        <div class="finding-item">
+          <span class="finding-item-name">Unprotected Client-Callable Script Includes</span>
+          <span class="finding-item-detail" style="color:var(--orange);font-weight:600">4 findings &middot; High</span>
+        </div>
+      </div>
+
+      <p class="narrative" style="margin-top:16px">Our scan found <strong>455 unprotected client-callable Script Includes</strong> while ServiceNow's scan flagged <strong>4</strong>. The difference: their check only flags the most obvious cases. Our cross-reference analysis is significantly more comprehensive — this is the gap in the ecosystem that this tool fills.</p>
+    </div>
+  </div>
+
+  <!-- Section 8: Remediation -->
+  <div class="section" id="remediation">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <div class="section-title">Remediation Priority</div>
+    </div>
+
+    <div class="card">
+      <div class="prep-item">
+        <div class="prep-num">1</div>
+        <div class="prep-content">
+          <div class="prep-title">Review Guest User Account</div>
+          <div class="prep-desc">The guest user is active. If unauthenticated access isn't required, deactivate the guest account. If it is required, ensure every table accessible via public portals has explicit ACLs restricting guest to only what's intended.</div>
+        </div>
+      </div>
+      <div class="prep-item">
+        <div class="prep-num">2</div>
+        <div class="prep-content">
+          <div class="prep-title">Audit Empty ACLs on Sensitive Tables</div>
+          <div class="prep-desc">Of the 6,920 empty ACLs, prioritize those protecting user data (sys_user), credentials (oauth_entity), business data (incident, change_request), and configuration data (sys_properties). Add appropriate Required Roles to each.</div>
+        </div>
+      </div>
+      <div class="prep-item">
+        <div class="prep-num">3</div>
+        <div class="prep-content">
+          <div class="prep-title">Add ACLs to Custom Tables</div>
+          <div class="prep-desc">The 45 custom tables with zero ACLs need at least a base read/write/delete ACL with an appropriate role. Focus on the 2 that have records — u_verb_test_576385 and u_verb_test_236571.</div>
+        </div>
+      </div>
+      <div class="prep-item">
+        <div class="prep-num">4</div>
+        <div class="prep-content">
+          <div class="prep-title">Restrict Public Portal Pages</div>
+          <div class="prep-desc">Review the 19 public pages. Pages like "Request a Laptop" and "Employee Self Service" likely shouldn't be accessible without authentication. Remove the public flag or add authentication redirects.</div>
+        </div>
+      </div>
+      <div class="prep-item">
+        <div class="prep-num">5</div>
+        <div class="prep-content">
+          <div class="prep-title">Add ACLs to Client-Callable Script Includes</div>
+          <div class="prep-desc">455 client-callable Script Includes lack ACLs. Prioritize those with "public" access and those handling sensitive operations (OAuthAccessToken, ConnectionAndCredentialHelper, password-related scripts).</div>
+        </div>
+      </div>
+      <div class="prep-item">
+        <div class="prep-num">6</div>
+        <div class="prep-content">
+          <div class="prep-title">Set Missing Security Properties</div>
+          <div class="prep-desc">Explicitly set glide.script.block.client.globals, glide.cms.catalog.public_access (to false), and glide.ui.security.allow_coexistence (to false). Don't rely on platform defaults — they can change between versions.</div>
+        </div>
+      </div>
+      <div class="prep-item">
+        <div class="prep-num">7</div>
+        <div class="prep-content">
+          <div class="prep-title">Resolve Instance Scan Findings</div>
+          <div class="prep-desc">Address the 554 deactivated security controls and 330 empty ACL findings flagged by ServiceNow's own scanner. These validate and overlap with our findings — resolving them addresses both assessments.</div>
+        </div>
+      </div>
+      <div class="prep-item">
+        <div class="prep-num">8</div>
+        <div class="prep-content">
+          <div class="prep-title">Configure Portal Login Pages</div>
+          <div class="prep-desc">12 portals lack login page configuration. Add login redirects to ensure unauthenticated sessions are properly handled across all portal entry points.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 9: Reference -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <div class="section-title">Reference</div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Published Security Research Sources</div>
+      <table class="ref-table">
+        <thead>
+          <tr><th>Source</th><th>Finding</th><th>Year</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>AppOmni (Aaron Costello)</td><td>~70% of instances tested had ACL misconfigs leaking data</td><td>2023</td></tr>
+          <tr><td>AppOmni</td><td>1,000+ enterprise instances exposing KB articles with PII and credentials</td><td>2024</td></tr>
+          <tr><td>BleepingComputer</td><td>45% of enterprise instances leaking KB data</td><td>2024</td></tr>
+          <tr><td>CIO.com</td><td>CVE-2025-3648 — "Warning to ServiceNow admins: Fix your ACLs now"</td><td>2025</td></tr>
+          <tr><td>Threatpost</td><td>"Most ServiceNow Instances Misconfigured, Exposed"</td><td>2022</td></tr>
+          <tr><td>ServiceNow (BusinessWire)</td><td>Official acknowledgment of widespread misconfiguration</td><td>2022</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Scan Methodology</div>
+      <table class="ref-table">
+        <thead>
+          <tr><th>Check</th><th>Method</th><th>Findings</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Empty ACLs</td><td>sys_security_acl with no roles (sys_security_acl_role), no condition, no script</td><td>6,920</td></tr>
+          <tr><td>Unprotected Tables</td><td>Custom tables (u_ prefix) cross-referenced against sys_security_acl</td><td>45</td></tr>
+          <tr><td>Client-Callable SIs</td><td>sys_script_include (client_callable=true) with no matching ACL</td><td>455 of 739</td></tr>
+          <tr><td>KB Exposure</td><td>glide.knowman.block_access_with_no_user_criteria + User Criteria check</td><td>Secure</td></tr>
+          <tr><td>Public Pages</td><td>sp_page where public=true</td><td>19</td></tr>
+          <tr><td>Guest User</td><td>sys_user where user_name=guest</td><td>Active</td></tr>
+          <tr><td>Security Properties</td><td>11 critical properties checked against recommended values</td><td>8 secure, 3 not set</td></tr>
+          <tr><td>Instance Scan</td><td>scan_finding grouped by security checks</td><td>1,978 total</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:12px;font-size:10px;color:var(--text-muted)">This scan is read-only — no records were modified, no vulnerabilities were exploited, no data was accessed through the findings. This is an ACL configuration audit, not a penetration test.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Generated by <a href="#">operatorzero.ai</a> &middot; ACL Security Scanner &middot; April 2026
+</div>
+
+</body>
+</html>
