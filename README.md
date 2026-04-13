@@ -110,7 +110,7 @@ The `sample-reports/` directory contains example outputs from real instance scan
 
 These 3 are open source. We have 50+ more at [operatorzero.ai](https://operatorzero.ai) covering license optimization, upgrade readiness, SLA validation, CMDB integrity, notification auditing, form performance profiling, change compliance, storage analysis, and more.
 
-operatorZero is an AI-native ServiceNow partner — we build tools that give platform teams superpowers. If you're spending days on assessments that should take minutes, come talk to us.
+operatorZero is building tools that give platform teams superpowers. If you're spending days on assessments that should take minutes, come talk to us.
 
 ## Contributing
 
