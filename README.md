@@ -1,8 +1,11 @@
 # OperatorZero ServiceNow Skills for Claude Code
 
-Free ServiceNow instance scanning tools built as [Claude Code](https://claude.ai/claude-code) skills.
+Free ServiceNow instance scanning tools built as [Claude Code](https://claude.ai/claude-code) skills. Designed to pair with the official **[ServiceNow SDK](https://www.servicenow.com/docs/r/application-development/servicenow-sdk/servicenow-sdk-landing.html)** and its `fluent` plugin (released April 15, 2026 as part of ServiceNow's *Build Anywhere* initiative).
 
-Drop these into your Claude Code skills directory, connect to a ServiceNow instance, and run them. Each skill scans your instance and generates a professional HTML report.
+- **The fluent plugin** lets you *build* on ServiceNow from Claude Code (Business Rules, Tables, Flows, Script Includes, etc.).
+- **These skills** let you *audit and understand* what's already on your instance.
+
+Together they cover the full developer loop: see what's there → fix or extend it.
 
 ## Skills
 
@@ -56,22 +59,38 @@ Every finding ties back to published research: [AppOmni](https://appomni.com/ao-
 
 ## Installation
 
-### 1. Copy skills to your Claude Code skills directory
+### 1. Install the ServiceNow SDK + fluent plugin (recommended)
+
+The cleanest way to give Claude Code an authenticated path into your ServiceNow instance is the official SDK and its `fluent` Claude Code plugin.
+
+**Install the SDK** (Node 20+ required):
+```bash
+npm install -g @servicenow/sdk@latest
+npx @servicenow/sdk --version   # confirm 4.6.0 or higher
+```
+
+**Install the fluent plugin in Claude Code:**
+```
+/plugin marketplace add servicenow/sdk
+/plugin install fluent
+/reload-plugins
+```
+
+This gives Claude Code two skills out of the box:
+- `now-sdk-setup` — environment bootstrap
+- `now-sdk-explain` — JIT documentation lookup over the SDK's ~180 topic catalog (Business Rules, Tables, Flows, ACLs, Script Includes, etc.)
+
+Authenticate to your instance once via `npx @servicenow/sdk deploy` — credentials are cached locally.
+
+> **Other connection methods** also work — these skills are tool-agnostic. They describe *what* data to collect; Claude Code figures out *how* using whatever's available (REST API, GlideRecord scripts, MCP servers, etc.).
+
+### 2. Install these audit skills
 
 ```bash
 git clone https://github.com/mitchellOpZero/servicenow-claude-skills-.git
 cp -r servicenow-claude-skills-/skills/* ~/.claude/skills/
+cp -r servicenow-claude-skills-/shared ~/.claude/skills/_shared    # report templates referenced by the skills
 ```
-
-### 2. Connect to your ServiceNow instance
-
-These skills need a way to query your ServiceNow instance. They're tool-agnostic — use whatever connection method works for your setup:
-
-- **ServiceNow REST API** — Claude Code can call the Table API, Scripted REST APIs, or GlideRecord via the Fluent API
-- **Anthropic SDK** — build a connection layer with the Claude SDK
-- **Any MCP server** that provides ServiceNow table query and script execution capabilities
-
-The skill files describe WHAT data to collect (specific tables, fields, and query patterns). Claude Code figures out HOW to collect it based on whatever tools are available in your environment.
 
 ### 3. Run a skill
 
@@ -86,21 +105,47 @@ Each generates an HTML report and opens it in your browser.
 ## Requirements
 
 - [Claude Code](https://claude.ai/claude-code) (CLI, desktop app, or IDE extension)
-- A ServiceNow instance (dev, test, or prod)
-- A way to query the instance from Claude Code (REST API, SDK, MCP server, etc.)
+- Node.js 20+ (for the ServiceNow SDK)
+- A ServiceNow instance running Zurich or later (or a free PDI)
 - Admin or read-access role on the instance
 
-## How It Works
+## How It Works — Architecture
 
-Each skill is a `SKILL.md` file — a detailed prompt that tells Claude Code exactly what data to collect, how to analyze it, and how to format the output. When you run a skill:
+These skills follow the **router + topic corpus** pattern that ServiceNow itself uses for the new `now-sdk-explain` skill. Each skill is split into:
 
-1. Claude Code reads the SKILL.md instructions
-2. Queries your ServiceNow instance using available tools
+```
+skills/<skill>/
+├── SKILL.md                    ← thin router (~60 lines): trigger,
+│                                 Core Principle, Critical Rules, and
+│                                 a routing table pointing to topics
+└── topics/
+    ├── 01-data-collection.md   ← all sn_script collection phases
+    └── 02-report-structure.md  ← report sections + scope + pitch
+
+shared/report-templates/        ← cross-skill HTML style specs
+├── operatorzero-report-base.md
+└── operatorzero-onboarding-style.md
+```
+
+When a skill triggers, only `SKILL.md` (~2KB) lands in context. The agent reads each topic file **only when it reaches that phase**. This keeps per-trigger context cost ~80% lower than monolithic skill files and makes report templates reusable across skills.
+
+When you run a skill:
+
+1. Claude Code reads the slim `SKILL.md` router and the relevant phase topics
+2. Queries your ServiceNow instance (via the SDK, REST API, MCP server, or whatever's available)
 3. Analyzes the data (cross-referencing tables, scoring findings, categorizing by severity)
-4. Generates a styled HTML report
+4. Generates a styled HTML report using the shared template
 5. Opens it in your browser
 
 No plugins, no store apps, no installation on your ServiceNow instance. Read-only — nothing is modified.
+
+## Companion Tools
+
+| Need | Use |
+|---|---|
+| Build Business Rules, Tables, Flows, Script Includes | [ServiceNow SDK + `fluent` plugin](https://www.servicenow.com/docs/r/application-development/servicenow-sdk/servicenow-sdk-landing.html) |
+| Look up SDK / Fluent API docs from Claude Code | `now-sdk-explain` (auto-triggers) |
+| Audit what's already on the instance | These skills (`/sn-onboard`, `/sn-dead-code`, `/sn-acl-scan`) |
 
 ## Sample Reports
 
@@ -108,7 +153,7 @@ The `sample-reports/` directory contains example outputs from real instance scan
 
 ## More Skills
 
-These 3 are open source. We have 50+ more at [operatorzero.ai](https://operatorzero.ai) covering license optimization, upgrade readiness, SLA validation, CMDB integrity, notification auditing, form performance profiling, change compliance, storage analysis, and more.
+These 3 are open source. We have 50+ more at [operatorzero.ai](https://operatorzero.ai) covering license optimization, upgrade readiness, SLA validation, CMDB integrity, notification auditing, form performance profiling, change compliance, storage analysis, and more — all built on the same router + corpus pattern.
 
 operatorZero is building tools that give platform teams superpowers. If you're spending days on assessments that should take minutes, come talk to us.
 
