@@ -38,6 +38,20 @@ Instead say: "custom configuration", "customization", "form behavior", "field ru
 
 The ONLY place technical terms appear is in the small reference table at the bottom (for the developers the manager will hand this to).
 
+## Critical Rules (avoid these failure modes)
+
+### Separate OOB from custom — never imply customization based on raw counts
+Tables like `sys_script`, `sys_security_acl`, `sys_dictionary`, `sys_script_include`, `sys_ui_policy`, `sys_ui_action` ship with **thousands** of rows out-of-the-box. A raw count from those tables is mostly a count of what ServiceNow shipped, not what humans on this instance built. Every count meant to characterize *customization* must filter by `sys_scope` (exclude `global` plus any installed-app scopes you didn't author) or by `sys_package` (exclude OOB packages). If you can't filter cleanly, say "this includes shipped content" rather than implying it's all custom.
+
+### Resolve state and choice values via `sys_choice` — never guess the labels
+State values like `-3`, `2`, `7` are integers whose meaning is table-specific and can be customized. Before describing what state distributions mean, query `sys_choice` for `name=<table>^element=state` and join the labels in. Do not assume OOB defaults — they may be overridden.
+
+### Verify contributors are real users on this instance
+`sys_created_by` aggregates pull names from rows that include OOB content authored by ServiceNow's own developers. Before listing anyone as "a person who built this," check `sys_user` for the username AND check `last_login_time` is non-null. If the account never logged into this instance, do not name them.
+
+### Don't narrate around missing data
+If a query returns empty endpoints, null fields, or zero rows where you expected something, say so. Don't fill the gap with plausible-sounding interpretation. "This integration's endpoint is empty — it may be unconfigured" is honest; "this integration looks like it pulls from system X" is fabrication.
+
 ## How to use this skill
 
 This skill is a router. Read each topic file only when you reach that phase.
